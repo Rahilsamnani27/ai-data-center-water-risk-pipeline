@@ -1,0 +1,84 @@
+<svg width="1200" height="600" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#4a4a4a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="600" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="600" y="36" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#1a1a1a">AI Data Center Water Stress Tracker — Architecture</text>
+
+  <!-- Orchestration band -->
+  <rect x="60" y="70" width="1080" height="50" rx="8" fill="#fff3e0" stroke="#e8a33d" stroke-width="1.5"/>
+  <text x="600" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#8a5a00">Apache Airflow (Docker) — daily DAG: fetch_water_data &#8594; load_to_postgres &#8594; run_dbt_models &#8594; test_dbt_models</text>
+
+  <!-- Row of stage boxes -->
+  <!-- 1. Data Source -->
+  <rect x="40" y="200" width="170" height="110" rx="10" fill="#eef2f7" stroke="#6b7280" stroke-width="1.5"/>
+  <text x="125" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#374151">USGS Water</text>
+  <text x="125" y="253" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#374151">Services API</text>
+  <text x="125" y="278" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#6b7280">Live + 30-day</text>
+  <text x="125" y="293" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#6b7280">historical flow</text>
+
+  <line x1="210" y1="255" x2="252" y2="255" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 2. Ingestion -->
+  <rect x="255" y="200" width="170" height="110" rx="10" fill="#e6f4ea" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="340" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1b5e20">Ingestion</text>
+  <text x="340" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#1b5e20">Python + Boto3</text>
+  <text x="340" y="278" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#1b5e20">fetch_water_data.py</text>
+
+  <line x1="425" y1="255" x2="467" y2="255" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 3. S3 -->
+  <rect x="470" y="200" width="170" height="110" rx="10" fill="#fdeee0" stroke="#c2640a" stroke-width="1.5"/>
+  <text x="555" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#8a4607">Amazon S3</text>
+  <text x="555" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#8a4607">Raw JSON landing</text>
+  <text x="555" y="278" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#8a4607">zone (per state)</text>
+
+  <line x1="640" y1="255" x2="682" y2="255" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 4. Postgres -->
+  <rect x="685" y="200" width="170" height="110" rx="10" fill="#e3edfb" stroke="#2057a8" stroke-width="1.5"/>
+  <text x="770" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#173f7a">PostgreSQL</text>
+  <text x="770" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#173f7a">Docker container</text>
+  <text x="770" y="278" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#173f7a">raw + historical tables</text>
+
+  <line x1="855" y1="255" x2="897" y2="255" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 5. dbt -->
+  <rect x="900" y="200" width="130" height="110" rx="10" fill="#f1e9fb" stroke="#6b3fa0" stroke-width="1.5"/>
+  <text x="965" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#4a2877">dbt</text>
+  <text x="965" y="258" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#4a2877">staging +</text>
+  <text x="965" y="274" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#4a2877">mart models</text>
+  <text x="965" y="292" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#4a2877">+ 10 tests</text>
+
+  <line x1="1030" y1="255" x2="1072" y2="255" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 6. Output -->
+  <rect x="1075" y="170" width="105" height="170" rx="10" fill="#fbe7ee" stroke="#a8265a" stroke-width="1.5"/>
+  <text x="1127" y="215" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#7a1c41">Streamlit</text>
+  <text x="1127" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#7a1c41">Dashboard</text>
+  <text x="1127" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#7a1c41">Map + stress</text>
+  <text x="1127" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#7a1c41">score table</text>
+
+  <!-- Reference data join -->
+  <rect x="685" y="380" width="170" height="80" rx="10" fill="#fef9e7" stroke="#b8950c" stroke-width="1.5"/>
+  <text x="770" y="412" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#7a6206">data_centers.csv</text>
+  <text x="770" y="432" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#7a6206">9 curated AI data</text>
+  <text x="770" y="447" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#7a6206">center locations</text>
+
+  <line x1="770" y1="380" x2="770" y2="312" stroke="#4a4a4a" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+  <text x="790" y="350" font-family="Arial, sans-serif" font-size="10" fill="#6b7280">joined by</text>
+  <text x="790" y="363" font-family="Arial, sans-serif" font-size="10" fill="#6b7280">nearest site</text>
+
+  <!-- Orchestration connector lines down to relevant boxes -->
+  <line x1="340" y1="120" x2="340" y2="198" stroke="#c98a2e" stroke-width="1.2" stroke-dasharray="3,3"/>
+  <line x1="770" y1="120" x2="770" y2="198" stroke="#c98a2e" stroke-width="1.2" stroke-dasharray="3,3"/>
+  <line x1="965" y1="120" x2="965" y2="198" stroke="#c98a2e" stroke-width="1.2" stroke-dasharray="3,3"/>
+
+  <!-- Footer note -->
+  <text x="600" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#9ca3af">Data quality enforced via dbt tests (not_null, unique, accepted_values, accepted_range) between staging and mart layers</text>
+</svg>

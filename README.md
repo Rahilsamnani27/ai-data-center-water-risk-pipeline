@@ -1,6 +1,6 @@
 # AI Data Center Water Stress Tracker
 
-A data engineering pipeline that ingests real-time and historical water flow data from the USGS Water Services API, joins it against known AI data center locations, computes a water-stress score per site, and surfaces it through a dashboard — orchestrated end-to-end by Apache Airflow and tested with dbt.
+A data engineering pipeline that ingests real-time and historical water flow data from the USGS Water Services API, joins it against known AI data center locations, computes a water-stress score per site, and surfaces it through a dashboard — all orchestrated by Apache Airflow and tested with dbt.
 
 ![Architecture Diagram](architecture_diagram.svg)
 
@@ -23,13 +23,16 @@ A data engineering pipeline that ingests real-time and historical water flow dat
 - [Setup](#setup)
 - [Running the Pipeline](#running-the-pipeline)
 - [Results](#results)
+- [Limitations and Next Steps](#limitations-and-next-steps)
 - [Data Sources](#data-sources)
 
 ---
 
 ## Overview
 
-AI data centers consume enormous volumes of water for cooling. While carbon footprint tracking for AI infrastructure is becoming standard, water stress is rarely monitored at the same resolution. This pipeline tracks real water flow near major US AI data center clusters and flags which ones sit near water sources currently running below their 30-day average — surfacing a sustainability signal that most public dashboards don't track today.
+AI data centers consume enormous volumes of water for cooling. While carbon footprint tracking for AI infrastructure is becoming common, water stress is rarely monitored at the same resolution. This project is a working prototype of that monitoring pattern: it tracks real water flow near a curated set of major US AI data center sites and flags which ones sit near water sources currently running below their 30-day average.
+
+This is a **data engineering portfolio project** — the goal is to demonstrate the full pipeline lifecycle (ingestion → storage → transformation → testing → orchestration), not to deliver a production-grade water risk product. See [Limitations](#limitations-and-next-steps) for an honest scope discussion.
 
 ---
 
@@ -40,7 +43,7 @@ Data Source              Ingestion            Storage              Transform    
 ┌──────────────┐    ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌──────────────┐
 │ USGS Water   │    │                │   │                │   │                │   │                │   │              │
 │ Services API │───>│  Python +      │──>│  Amazon S3     │──>│  Postgres      │──>│  dbt models    │   │  Streamlit   │
-│ (live +      │    │  Boto3         │   │  (raw JSON)    │   │  (Docker)      │   │  + tests       │──>│  Dashboard   │
+│ (live +      │    │  boto3         │   │  (raw JSON)    │   │  (Docker)      │   │  + tests       │──>│  Dashboard   │
 │ 30-day       │    │                │   │                │   │                │   │                │   │              │
 │ historical)  │    └────────────────┘   └────────────────┘   └────────────────┘   └────────────────┘   └──────────────┘
 └──────────────┘                                                       ▲                    │
@@ -52,24 +55,24 @@ Data Source              Ingestion            Storage              Transform    
                                                                                      └────────────────┘
 ```
 
-**Orchestration** is handled by Apache Airflow running in Docker, which sequences all four pipeline stages on a daily schedule: ingestion → load → transform → test.
+**Orchestration** is handled by Apache Airflow running in Docker, which schedules and sequences all four pipeline stages daily: ingestion → load → transform → test.
 
 ---
 
 ## Tech Stack
 
-| Component           | Technology                            |
-|----------------------|----------------------------------------|
-| **Ingestion**        | Python, Requests, Boto3                |
-| **Cloud Storage**    | Amazon S3                              |
-| **Database**         | PostgreSQL (Docker)                    |
-| **Transformation**   | dbt (dbt-postgres)                     |
-| **Data Quality**     | dbt tests, dbt_utils                   |
-| **Orchestration**    | Apache Airflow (Docker, custom image)  |
-| **Dashboard**        | Streamlit, Plotly                      |
-| **Infrastructure**   | Docker, Docker Compose                 |
-| **Cloud/Auth**       | AWS IAM, AWS CLI                       |
-| **Languages**        | Python 3, SQL                          |
+| Component           | Technology                          |
+|---------------------|--------------------------------------|
+| **Ingestion**       | Python, Requests, Boto3              |
+| **Cloud Storage**   | Amazon S3                            |
+| **Database**        | PostgreSQL (Docker)                  |
+| **Transformation**  | dbt (dbt-postgres)                   |
+| **Data Quality**    | dbt tests, dbt_utils                 |
+| **Orchestration**   | Apache Airflow (Docker, custom image)|
+| **Dashboard**       | Streamlit, Plotly                    |
+| **Infrastructure**  | Docker, Docker Compose                |
+| **Cloud/Auth**      | AWS IAM, AWS CLI                     |
+| **Languages**       | Python 3, SQL                        |
 
 ---
 
@@ -108,9 +111,9 @@ ai-data-center-water-risk-pipeline/
 │   └── docker-compose.yml           # Postgres container
 │
 ├── data/
-│   └── data_centers.csv             # Curated AI data center locations (VA, AZ, TX)
+│   └── data_centers.csv             # 9 curated AI data center locations (VA, AZ, TX)
 │
-├── dashboard.py                      # Streamlit dashboard
+├── dashboard.py                     # Streamlit dashboard
 └── README.md
 ```
 
@@ -120,14 +123,14 @@ ai-data-center-water-risk-pipeline/
 
 ### Ingestion
 
-`fetch_water_data.py` pulls live readings from the USGS Water Services API (public, no API key required) for Virginia, Arizona, and Texas, and uploads raw JSON to S3:
+`fetch_water_data.py` pulls live readings from the USGS Water Services API (no API key required) for Virginia, Arizona, and Texas, and uploads raw JSON to S3:
 
 ```
 s3://<bucket>/raw/{state}/{timestamp}.json
 s3://<bucket>/historical/{state}/{timestamp}.json
 ```
 
-`fetch_historical_water.py` separately pulls 30 days of daily flow values per state — needed to compute a meaningful average, since a single snapshot has no variation to compare against.
+`fetch_historical_water.py` separately pulls 30 days of daily flow values per state, needed to compute a meaningful average (a single snapshot has no variation to compare against).
 
 ### Storage
 
@@ -135,20 +138,22 @@ s3://<bucket>/historical/{state}/{timestamp}.json
 
 ### Transformation (dbt)
 
-Two dbt models handle the transformation logic in version-controlled SQL:
+Two dbt models replace the original Python transformation logic with version-controlled SQL:
 
 - **`stg_water_readings`** — staging layer, filters nulls
-- **`mart_water_stress`** — joins readings against `data_centers.csv` by nearest site (geodesic distance), and computes:
+- **`mart_water_stress`** — joins readings against `data_centers.csv` by nearest site (geodesic distance), computes:
 
 ```
 stress_score = 1 - (latest_flow / avg_flow)
 ```
-
-clamped between 0 and 1, with explicit `NULL` handling for sites with zero or missing flow rather than silently reporting a false "low stress."
+clamped between 0 and 1, with explicit `NULL` handling for sites with zero/missing flow rather than silently reporting a false "low stress."
 
 ### Data Quality
 
-10 dbt tests run across both models — `not_null`, `unique`, `accepted_values`, and a `dbt_utils.accepted_range` check on the stress score. These caught two real issues during development: a duplicate-row bug from an unaggregated join, and stress scores exceeding the expected 0–1 range — both fixed at the model level before reaching the mart table.
+10 dbt tests run against both models, including `not_null`, `unique`, `accepted_values`, and a `dbt_utils.accepted_range` check on the stress score. These tests caught two real bugs during development:
+
+1. **423 duplicate rows** in the mart model, caused by an unaggregated join on same-day readings — fixed with an additional `GROUP BY`.
+2. **Out-of-range stress scores** exceeding 1.0 — fixed by wrapping the calculation in `LEAST(..., 1)`.
 
 ### Orchestration (Airflow)
 
@@ -158,17 +163,19 @@ A daily DAG runs all four stages in sequence:
 fetch_water_data >> load_to_postgres >> run_dbt_models >> test_dbt_models
 ```
 
-Airflow runs in a custom Docker image (built on top of `apache/airflow`, with `boto3`, `psycopg2`, and `dbt-postgres` installed), on a Docker network shared with the Postgres container.
+Airflow runs in a custom Docker image (the official image doesn't ship with `boto3`/`psycopg2`/`dbt-postgres`), on a Docker network shared with the Postgres container so the two can resolve each other by container name instead of `localhost`.
 
 ---
 
 ## Dashboard
 
-A Streamlit dashboard reads directly from the `mart_water_stress` table and shows:
+A lightweight Streamlit dashboard reads directly from the `mart_water_stress` table and shows:
 
-- Summary metrics — data centers tracked, high-stress count, no-data count
+- Summary metrics (data centers tracked, high-stress count, no-data count)
 - A map of all tracked data centers, colored by stress level
-- A full results table — nearest water site, distance, flow values, and stress score per data center
+- A full results table with the nearest water site, distance, flow values, and stress score per data center
+
+This is intentionally a verification view, not a BI deliverable — building polished, stakeholder-facing dashboards (Power BI, Tableau) is typically analyst-owned work; this dashboard exists to prove the pipeline output is correct and usable.
 
 ---
 
@@ -214,7 +221,7 @@ dbt deps
 
 ## Running the Pipeline
 
-### Manual (local testing)
+### Manual (for local testing)
 ```bash
 python lambdas/fetch_water_data.py
 python scripts/fetch_historical_water.py
@@ -230,8 +237,7 @@ cd airflow
 docker compose build
 docker compose up -d
 ```
-
-Visit `http://localhost:8080`, log in with the auto-generated admin password, unpause `water_stress_pipeline`, and trigger it.
+Visit `http://localhost:8080`, log in with the auto-generated admin password (printed to `/opt/airflow/standalone_admin_password.txt` inside the container), unpause `water_stress_pipeline`, and trigger it.
 
 ---
 
@@ -244,6 +250,20 @@ All four pipeline stages run successfully end-to-end, scheduled daily:
 Sample output from `mart_water_stress`:
 
 ![Dashboard](dashboard_screenshot.png)
+
+---
+
+## Limitations and Next Steps
+
+This is a learning project, scoped deliberately small. Being upfront about what it doesn't do:
+
+- **9 manually curated data centers** — there's no public API for data center locations, so this list was compiled by hand from public reporting. A production version would need a maintained registry.
+- **Nearest-gauge matching, not co-located sensors** — some data centers are 10-15km from their nearest USGS gauge. Distance is reported alongside every result so this is transparent, not hidden.
+- **30-day comparison window** — stress scores reflect short-term flow drops relative to the last 30 days, not long-term drought severity.
+- **dbt runs as a separate step inside the Airflow container** rather than a fully unified image — this surfaced a real cross-container networking issue (two separately-started Docker Compose projects don't share a network by default) that was resolved by introducing a shared Docker network and switching connection strings from `localhost` to container names.
+- **Local Airflow setup uses SQLite + SequentialExecutor** — fine for this scale, explicitly not recommended for production (Airflow's own UI flags this).
+
+**Possible extensions:** a denser sensor network, a maintained data center registry, swapping the manual nearest-site join for a proper geospatial index, and migrating the Airflow metadata DB to Postgres with `LocalExecutor` for parallel task execution.
 
 ---
 
