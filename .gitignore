@@ -1,0 +1,26 @@
+﻿venv/
+__pycache__/
+*.pyc
+.env
+
+# dbt
+dbt_packages/
+target/
+logs/
+*.log
+
+# Airflow
+airflow/logs/
+airflow/dags/__pycache__/
+standalone_admin_password.txt
+airflow.db
+
+# AWS / credentials
+.aws/
+.dbt/
+*.pem
+*credentials*
+
+# OS / editor
+.DS_Store
+.vscode/

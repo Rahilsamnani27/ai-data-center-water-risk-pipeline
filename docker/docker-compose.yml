@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: water_tracker_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: water_tracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - shared_net
+
+volumes:
+  postgres_data:
+
+networks:
+  shared_net:
+    name: water_tracker_shared_net

@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  airflow:
+    build: .
+    container_name: water_tracker_airflow
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ../scripts:/opt/airflow/scripts
+      - ../lambdas:/opt/airflow/lambdas
+      - ../data:/opt/airflow/data
+      - ../dbt_project:/opt/airflow/dbt_project
+      - C:/Users/Rahil Samanani/.aws:/home/airflow/.aws:ro
+      - C:/Users/Rahil Samanani/.dbt:/home/airflow/.dbt:ro
+    command: standalone
+    networks:
+      - shared_net
+
+networks:
+  shared_net:
+    name: water_tracker_shared_net

@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: stg_water_readings
+    columns:
+      - name: site_name
+        tests:
+          - not_null
+      - name: flow_value
+        tests:
+          - not_null
+      - name: latitude
+        tests:
+          - not_null
+      - name: longitude
+        tests:
+          - not_null
+      - name: reading_date
+        tests:
+          - not_null
+      - name: state_code
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['va', 'az', 'tx']
