@@ -27,22 +27,20 @@ A data engineering pipeline that ingests real-time and historical water flow dat
 - [Data Sources](#data-sources)
 
 ---
-
 ## Overview
 
 AI data centers consume enormous volumes of water for cooling. While carbon footprint tracking for AI infrastructure is becoming common, water stress is rarely monitored at the same resolution. This project is a working prototype of that monitoring pattern: it tracks real water flow near a curated set of major US AI data center sites and flags which ones sit near water sources currently running below their 30-day average.
 
-This is a **data engineering portfolio project** — the goal is to demonstrate the full pipeline lifecycle (ingestion → storage → transformation → testing → orchestration), not to deliver a production-grade water risk product. See [Limitations](#limitations-and-next-steps) for an honest scope discussion.
+This is a **data engineering portfolio project** — the goal is to demonstrate the full pipeline lifecycle (ingestion → storage → transformation → testing → orchestration), not to deliver a production-grade water risk product.
 
 ---
-
 ## Architecture
 
 ```
 Data Source              Ingestion            Storage              Transform            Orchestration         Output
 ┌──────────────┐    ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌──────────────┐
 │ USGS Water   │    │                │   │                │   │                │   │                │   │              │
-│ Services API │───>│  Python +      │──>│  Amazon S3     │──>│  Postgres      │──>│  dbt models    │   │  Streamlit   │
+│ Services API │───>│  Python +      │──>│  Amazon S3     │──>│  Postgres      │──>│  dbt models   │   │  Streamlit   │
 │ (live +      │    │  boto3         │   │  (raw JSON)    │   │  (Docker)      │   │  + tests       │──>│  Dashboard   │
 │ 30-day       │    │                │   │                │   │                │   │                │   │              │
 │ historical)  │    └────────────────┘   └────────────────┘   └────────────────┘   └────────────────┘   └──────────────┘
@@ -58,7 +56,6 @@ Data Source              Ingestion            Storage              Transform    
 **Orchestration** is handled by Apache Airflow running in Docker, which schedules and sequences all four pipeline stages daily: ingestion → load → transform → test.
 
 ---
-
 ## Tech Stack
 
 | Component           | Technology                          |
@@ -77,7 +74,6 @@ Data Source              Ingestion            Storage              Transform    
 ---
 
 ## Project Structure
-
 ```
 ai-data-center-water-risk-pipeline/
 │
@@ -118,7 +114,6 @@ ai-data-center-water-risk-pipeline/
 ```
 
 ---
-
 ## Data Flow
 
 ### Ingestion
@@ -166,7 +161,6 @@ fetch_water_data >> load_to_postgres >> run_dbt_models >> test_dbt_models
 Airflow runs in a custom Docker image (the official image doesn't ship with `boto3`/`psycopg2`/`dbt-postgres`), on a Docker network shared with the Postgres container so the two can resolve each other by container name instead of `localhost`.
 
 ---
-
 ## Dashboard
 
 A lightweight Streamlit dashboard reads directly from the `mart_water_stress` table and shows:
@@ -178,7 +172,6 @@ A lightweight Streamlit dashboard reads directly from the `mart_water_stress` ta
 This is intentionally a verification view, not a BI deliverable — building polished, stakeholder-facing dashboards (Power BI, Tableau) is typically analyst-owned work; this dashboard exists to prove the pipeline output is correct and usable.
 
 ---
-
 ## Prerequisites
 
 - Docker Desktop (with WSL2 on Windows)
@@ -189,7 +182,6 @@ This is intentionally a verification view, not a BI deliverable — building pol
 ---
 
 ## Setup
-
 ```bash
 git clone https://github.com/<your-username>/ai-data-center-water-risk-pipeline.git
 cd ai-data-center-water-risk-pipeline
@@ -240,7 +232,6 @@ docker compose up -d
 Visit `http://localhost:8080`, log in with the auto-generated admin password (printed to `/opt/airflow/standalone_admin_password.txt` inside the container), unpause `water_stress_pipeline`, and trigger it.
 
 ---
-
 ## Results
 
 All four pipeline stages run successfully end-to-end, scheduled daily:
@@ -250,23 +241,7 @@ All four pipeline stages run successfully end-to-end, scheduled daily:
 Sample output from `mart_water_stress`:
 
 ![Dashboard](dashboard_screenshot.png)
-
 ---
-
-## Limitations and Next Steps
-
-This is a learning project, scoped deliberately small. Being upfront about what it doesn't do:
-
-- **9 manually curated data centers** — there's no public API for data center locations, so this list was compiled by hand from public reporting. A production version would need a maintained registry.
-- **Nearest-gauge matching, not co-located sensors** — some data centers are 10-15km from their nearest USGS gauge. Distance is reported alongside every result so this is transparent, not hidden.
-- **30-day comparison window** — stress scores reflect short-term flow drops relative to the last 30 days, not long-term drought severity.
-- **dbt runs as a separate step inside the Airflow container** rather than a fully unified image — this surfaced a real cross-container networking issue (two separately-started Docker Compose projects don't share a network by default) that was resolved by introducing a shared Docker network and switching connection strings from `localhost` to container names.
-- **Local Airflow setup uses SQLite + SequentialExecutor** — fine for this scale, explicitly not recommended for production (Airflow's own UI flags this).
-
-**Possible extensions:** a denser sensor network, a maintained data center registry, swapping the manual nearest-site join for a proper geospatial index, and migrating the Airflow metadata DB to Postgres with `LocalExecutor` for parallel task execution.
-
----
-
 ## Data Sources
 
 - [USGS Water Services API](https://waterservices.usgs.gov/) — public, free, no API key required
