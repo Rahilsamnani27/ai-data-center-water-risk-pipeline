@@ -39,17 +39,17 @@ This is a **data engineering portfolio project** — the goal is to demonstrate 
 Data Source              Ingestion            Storage              Transform            Orchestration         Output
 ┌──────────────┐    ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌──────────────┐
 │ USGS Water   │    │                │   │                │   │                │   │                │   │              │
-│ Services API │───>│  Python +      │──>│  Amazon S3     │──>│  Postgres      │──>│  dbt models   │   │  Streamlit   │
+│ Services API │───>│  Python +      │──>│  Amazon S3     │──>│  Postgres      │──>│  dbt models    │   │  Streamlit   │
 │ (live +      │    │  boto3         │   │  (raw JSON)    │   │  (Docker)      │   │  + tests       │──>│  Dashboard   │
 │ 30-day       │    │                │   │                │   │                │   │                │   │              │
 │ historical)  │    └────────────────┘   └────────────────┘   └────────────────┘   └────────────────┘   └──────────────┘
 └──────────────┘                                                       ▲                    │
-                                                                        │                    │
+                                                                       │                    │
                     ┌──────────────┐                                   │                    ▼
                     │ data_centers │───────────────────────────────────┘           ┌────────────────┐
-                    │   .csv       │      (joined by nearest site)                  │ Apache Airflow │
-                    └──────────────┘                                                │  (daily DAG)   │
-                                                                                     └────────────────┘
+                    │   .csv       │      (joined by nearest site)                 │ Apache Airflow │
+                    └──────────────┘                                               │  (daily DAG)   │
+                                                                                   └────────────────┘
 ```
 
 **Orchestration** is handled by Apache Airflow running in Docker, which schedules and sequences all four pipeline stages daily: ingestion → load → transform → test.
