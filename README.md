@@ -23,7 +23,6 @@ A data engineering pipeline that ingests real-time and historical water flow dat
 - [Setup](#setup)
 - [Running the Pipeline](#running-the-pipeline)
 - [Results](#results)
-- [Limitations and Next Steps](#limitations-and-next-steps)
 - [Data Sources](#data-sources)
 
 ---
