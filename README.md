@@ -1,6 +1,6 @@
 # AI Data Center Water Stress Tracker
 
-A data engineering pipeline that ingests real-time and historical water flow data from the USGS Water Services API, joins it against known AI data center locations, computes a water-stress score per site, and surfaces it through a dashboard — all orchestrated by Apache Airflow and tested with dbt.
+A data engineering pipeline that ingests real-time and historical water flow data from the USGS Water Services API, joins it against known AI data center locations, computes a water-stress score per site, and surfaces it through a dashboard,all orchestrated by Apache Airflow and tested with dbt.AI infrastructure is consuming water at an accelerating rate, yet most public monitoring stops at carbon footprint. This project closes part of that gap like tracking real hydrological data near major US AI data center clusters and flagging sites where water flow has dropped meaningfully below its 30-day average.The pipeline runs end-to-end ingestion from a public government API, cloud storage in S3,transformation and testing in dbt, daily orchestration in Airflow, and a lightweight dashboard for verification. Every stage is containerized and scheduled, not run manually.
 
 ![Architecture Diagram](architecture_diagram.svg)
 
